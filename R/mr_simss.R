@@ -14,7 +14,7 @@
 #'  correspond to a unique SNP, identified by \code{SNP}.
 #'@param subset A logical which permits the user to perform this method with
 #'  either the original complete set of SNPs or a subset of SNPs in order to
-#'  reduce computational time. The default setting is \code{subset=FALSE}.
+#'  reduce computational time. The default setting is \code{subset=TRUE}.
 #'@param sub.cut A numerical value required if \code{subset=TRUE}, which ensures
 #'  that for a single iteration of our method, the number of instruments
 #'  selected if the full set of SNPs is used and the number of instruments if
@@ -57,7 +57,7 @@
 #'  whether splits of 2 or 3 should be simulated. It is recommended that in the
 #'  case of no overlap between the two GWASs that splits of 2 should be used
 #'  while in the presence of overlap, especially full overlap, splits of 3
-#'  should be used. The default setting is \code{splits=2}.
+#'  should be used. The default setting is \code{splits=3}.
 #'@param pi A numerical value which determines the fraction of the first split
 #'  in both the 2 and 3 split approaches. This is the fraction that will be used
 #'  for SNP selection. The default setting is \code{pi=0.5}. This value must be
@@ -105,8 +105,8 @@
 #'@export
 #'
 
-mr_simss <- function(data,subset=FALSE,sub.cut=0.05,est.lambda=TRUE,lambda = NULL,n.exposure=1,n.outcome=1,n.overlap=1,cor.xy=0,
-                     n.iter=1000,splits=2,pi=0.5,pi2=0.5,threshold=5e-8,mr_method="mr_ivw",
+mr_simss <- function(data,subset=TRUE,sub.cut=0.05,est.lambda=TRUE,lambda = NULL,n.exposure=1,n.outcome=1,n.overlap=1,cor.xy=0,
+                     n.iter=1000,splits=3,pi=0.5,pi2=0.5,threshold=5e-8,mr_method="mr_ivw",
                      parallel=TRUE,n.cores=NULL,lambda.thresh=0.5){
 
   ## ensuring correct use of function

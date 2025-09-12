@@ -22,7 +22,9 @@ articles:
       - wc_wib
       - MR-SimSS-algorithm
       - perform-MR-SimSS
-      - derive-MR-SimSS
+      - TwoSampleMR
+
+
 
 
 
