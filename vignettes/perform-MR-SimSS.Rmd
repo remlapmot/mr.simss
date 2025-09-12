@@ -49,16 +49,16 @@ Important to have a section on Runtime here...
 
 
 
-```{r}
-clumped_SNPs <- read.csv("C:/Users/GenDataSci025/winnerscurse_MR/clumped_SNPs_bmi_1.txt",header=TRUE)
-summary_data_bmi_1 <- read.table("C:/Users/GenDataSci025/winnerscurse_realdata/data/summary_data_bmi_1.txt",header=TRUE)
-clumped_bmi_1 <- summary_data_bmi_1[summary_data_bmi_1$rsid %in% clumped_SNPs$x,]
-summary_data_bmi_2 <-  read.table('C:/Users/GenDataSci025/winnerscurse_realdata/data/summary_data_bmi_2.txt',header=TRUE)
-clumped_bmi_2 <- summary_data_bmi_2[summary_data_bmi_2$rsid %in% clumped_SNPs$x,]
+```{r,include=FALSE}
+#clumped_SNPs <- read.csv("C:/Users/GenDataSci025/winnerscurse_MR/clumped_SNPs_bmi_1.txt",header=TRUE)
+#summary_data_bmi_1 <- read.table("C:/Users/GenDataSci025/winnerscurse_realdata/data/summary_data_bmi_1.txt",header=TRUE)
+#clumped_bmi_1 <- summary_data_bmi_1[summary_data_bmi_1$rsid %in% clumped_SNPs$x,]
+#summary_data_bmi_2 <-  read.table('C:/Users/GenDataSci025/winnerscurse_realdata/data/summary_data_bmi_2.txt',header=TRUE)
+#clumped_bmi_2 <- summary_data_bmi_2[summary_data_bmi_2$rsid %in% clumped_SNPs$x,]
 ## real data
-data <- data.frame(SNP=clumped_bmi_1$rsid,beta.exposure=clumped_bmi_1$beta,beta.outcome=clumped_bmi_2$beta,se.exposure=clumped_bmi_1$se,se.outcome=clumped_bmi_2$se)
+#data <- data.frame(SNP=clumped_bmi_1$rsid,beta.exposure=clumped_bmi_1$beta,beta.outcome=clumped_bmi_2$beta,se.exposure=clumped_bmi_1$se,se.outcome=clumped_bmi_2$se)
 
-mr_simss(data,splits=2,mr_method="mr_raps")$summary
-mr_simss(data,splits=2,mr_method="mr_raps",over.dispersion = TRUE, loss.function = "tukey")$summary
+#mr_simss(data,splits=2,mr_method="mr_raps")$summary
+#mr_simss(data,splits=2,mr_method="mr_raps",over.dispersion = TRUE, loss.function = "tukey")$summary
 ```
 

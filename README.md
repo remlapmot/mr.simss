@@ -2,10 +2,6 @@
 
 <br>
 
-[$\star$]{style="color: darkred;"} <span style="color:darkred;">**Note:** </span> **`mr.simss` is still under <u> active
-development</u>.**
-
-<br>
 
 
 This R package, `mr.simss`, has been designed to allow users to easily implement
