@@ -32,47 +32,20 @@
 
 split3 <- function(data,lambda.val=0,pi=0.5,pi2 = 0.5, mr_method="mr_ivw", threshold=5e-8){
 
-  # create covariance matrix for the conditional distribution of each SNP
-  cond_var_gx <- ((1-pi)/(pi))*(data$se.exposure)^2
-  cond_var_gy <- ((1-pi)/(pi))*(data$se.outcome)^2
-  cond_cov_gx_gy <- ((1-pi)/(pi))*(data$se.exposure)*(data$se.outcome)*(lambda.val)
-
-  cond_cov_array <- array(dim=c(2, 2, nrow(data)))
-  cond_cov_array[1,1,] <- cond_var_gx
-  cond_cov_array[2,1,] <- cond_cov_gx_gy
-  cond_cov_array[1,2,] <- cond_cov_array[2,1,]
-  cond_cov_array[2,2,] <- cond_var_gy
-
-  #summary_stats_sub <- apply(cond_cov_array, 3, function(x) {MASS::mvrnorm(n=1, mu=c(0,0), Sigma=x)})
-  # mvrnorm replaced by the following:
-  tr_vec <- apply(cond_cov_array,3,function(x){x[1,1]+x[2,2]})
-  s_vec <- apply(cond_cov_array,3,function(x){sqrt(sum(x[1,1]*x[2,2]-x[1,2]*x[2,1]))})
-  t_vec <- sqrt(tr_vec+2*s_vec)
-  s_vec <- rep(s_vec,times=rep(4,nrow(data)))
-  I_vec <- rep(c(1,0,0,1),times=rep(nrow(data)))
-  t_vec <- rep(t_vec,times=rep(4,nrow(data)))
-  sqrt_array <- array((as.vector(cond_cov_array)+s_vec*I_vec)/t_vec,dim=c(2,2,nrow(data)))
-
-  Z_array <- array(stats::rnorm(2*nrow(data)),dim=c(1,2,nrow(data)))
-  Z_array <- abind::abind(Z_array,Z_array,along=1)
-  sqrt_array_normal <- sqrt_array*Z_array
-  # rearrange array so to use matrix multiplication
-  sqrt_array_normal <- aperm(a=sqrt_array_normal,perm=c(3,1,2))
-  dim1 <- sqrt_array_normal[,1,] %*% matrix(c(1,1),nrow=2)
-  dim2 <- sqrt_array_normal[,2,] %*% matrix(c(1,1),nrow=2)
-  summary_stats_sub <- cbind(dim1,dim2)
-
-  summary_stats_sub1 <- (summary_stats_sub + cbind(data$beta.exposure, data$beta.outcome))
-  #summary_stats_sub1 <- t(summary_stats_sub + rbind(data$beta.exposure, data$beta.outcome))
-
-  colnames(summary_stats_sub1) <- c("beta.exposure.1", "beta.outcome.1")
-  data <- cbind(data, summary_stats_sub1)
+  data$beta.exposure.1 <- stats::rnorm(n=nrow(data),mean=data$beta.exposure,sd=sqrt((1-pi)/pi)*data$se.exposure)
 
   se.exposure.1 <-  sqrt(((1)/(pi))*((data$se.exposure)^2))
   pval.exposure.1 <- 2*(stats::pnorm(abs(data$beta.exposure.1/se.exposure.1), lower.tail=FALSE))
 
-  data <- data %>% dplyr::filter(pval.exposure.1 < threshold)
+  data <- data %>% dplyr::filter(pval.exposure.1 < threshold) ## instrument selection
+
   if(nrow(data) < 3){return(NULL)}else{
+    ## Use conditional distribution to obtain variant-outcome estimates for selected variants
+    ## reduces comp time considerably compared with use of bivariate normals for all variants
+    mean.outcome <- data$beta.outcome + ((lambda*data$se.outcome)/(data$se.exposure))*(data$beta.exposure.1 - data$beta.exposure)
+    sd.outcome <- data$se.outcome*sqrt(1-(((1-pi)/(pi))*((lambda)^2)))
+    data$beta.outcome.1 <- stats::rnorm(n=nrow(data),mean=mean.outcome, sd=sd.outcome)
+
     beta.exposure.2 <- (data$beta.exposure - pi*data$beta.exposure.1)/(1-pi)
     beta.outcome.2 <- (data$beta.outcome - pi*data$beta.outcome.1)/(1-pi)
     se.exposure.2 <- sqrt(((1)/(1-pi))*((data$se.exposure)^2))

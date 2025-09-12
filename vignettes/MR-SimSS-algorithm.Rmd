@@ -119,7 +119,7 @@ $$
 
 
 
-Here, $\rho$ represents the correlation between the exposure and the outcome, $\rho = \text{cor}(X,Y)$, which may differ from $\beta$, the true exposure-outcome causal effect, due to confounding. A detailed outline of the derivation of this asymptotic distribution can be found [here](https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html). 
+Here, $\rho$ represents the correlation between the exposure and the outcome, $\rho = \text{cor}(X,Y)$, which may differ from $\beta$, the true exposure-outcome causal effect, due to confounding.  
 </li>
 
 
@@ -158,7 +158,7 @@ Therefore, a <span style="color:darkblue;">**3-split version of MR-SimSS**</span
 
 
 <ol start="5">
-    <li> After carrying out steps 1-4 above, the 3-split version of MR-SimSS imitates the **splitting of individual-level data in the $1-\pi$ fraction** into two fractions, $p$ and $1− p$. Values are simulated for the estimated variant-exposure and variant-outcome associations, $\{\widehat{\gamma_{{(1-\pi)p}_j}}, \widehat{\Gamma_{{(1-\pi)p}_j}}\}$, respectively, conditional on the generated association estimates in the $1-\pi$ fraction, $\{\widehat{\gamma_{{(1-\pi)}_j}}, \widehat{\Gamma_{{(1-\pi)}_j}}\}$. The **asymptotic conditional distribution** of $\begin{bmatrix} \widehat{\gamma_{(1-\pi)p}} \\ \widehat{\Gamma_{(1-\pi)p}} \end{bmatrix} \Bigm| \begin{bmatrix} \widehat{\gamma_{1-\pi}} \\ \widehat{\Gamma_{1-\pi}} \end{bmatrix}$ takes a similar format to the conditional distribution included above - an expression for it can be found [here](https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html). </li>
+    <li> After carrying out steps 1-4 above, the 3-split version of MR-SimSS imitates the **splitting of individual-level data in the $1-\pi$ fraction** into two fractions, $p$ and $1− p$. Values are simulated for the estimated variant-exposure and variant-outcome associations, $\{\widehat{\gamma_{{(1-\pi)p}_j}}, \widehat{\Gamma_{{(1-\pi)p}_j}}\}$, respectively, conditional on the generated association estimates in the $1-\pi$ fraction, $\{\widehat{\gamma_{{(1-\pi)}_j}}, \widehat{\Gamma_{{(1-\pi)}_j}}\}$. The **asymptotic conditional distribution** of $\begin{bmatrix} \widehat{\gamma_{(1-\pi)p}} \\ \widehat{\Gamma_{(1-\pi)p}} \end{bmatrix} \Bigm| \begin{bmatrix} \widehat{\gamma_{1-\pi}} \\ \widehat{\Gamma_{1-\pi}} \end{bmatrix}$ takes a similar format to the conditional distribution included above. </li>
     <li>
     Using the **asymptotic linearity of maximum likelihood estimates**, $\widehat{\Gamma_{{(1-\pi)(1-p)}_j}}$ is obtained using $\widehat{\Gamma_{{(1-\pi)}_j}} \approx p\widehat{\Gamma_{{(1-\pi)p}_j}}-(1-p)\widehat{\Gamma_{{(1-\pi)(1-p)}_j}}$, with the estimated standard errors $\widehat{\sigma_{X_{(1-\pi)p_j}}}$ and  $\widehat{\sigma_{X_{(1-\pi)(1-p)_j}}}$ again approximated in a similar manner to previously. 
     </li>
@@ -195,7 +195,7 @@ In order to <u>reduce the variability in the final MR-SimSS causal effect estima
 A suitable value for $\text{se}(\overline{\hat\beta})$, the **standard error of the MR-SimSS causal effect estimate**, can be obtained using the following expression:
 
 $$\text{se}(\overline{\hat\beta}) = \sqrt{\frac{\sum_{k=1}^{N_{\text{iter}}} \left[ \left( \text{se}\left( \hat\beta^{(k)} \right)\right)^2 \right] - \sum_{k=1}^{N_{\text{iter}}} \left[ \hat\beta^{(k)} - \overline{\hat\beta}\right]^2}{N_\text{iter}}}$$ 
-Note that $\text{se}\left(\hat\beta^{(k)}\right)$ is the standard error of the causal effect estimate at iteration $k$, which is typically provided by the summary-level MR method of choice. More details regarding the expression for $\text{se}(\overline{\hat\beta})$ can be found [here](https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html).
+Note that $\text{se}\left(\hat\beta^{(k)}\right)$ is the standard error of the causal effect estimate at iteration $k$, which is typically provided by the summary-level MR method of choice. 
 </li>
 
 </ol>
@@ -207,13 +207,13 @@ Note that $\text{se}\left(\hat\beta^{(k)}\right)$ is the standard error of the c
 
 <br>
 
-[$\star$]{style="color: darkblue;"} **Note:** The asymptotic conditional distribution equation, given in Step 1, suggests that in order to implement MR-SimSS, if the number of overlapping samples involved in the exposure and outcome GWASs, $N_\text{overlap}$, is known to differ from zero, $N_\text{overlap} \neq 0$, then this number $N_\text{overlap}$ as well as the correlation between the exposure and outcome, $\rho$, must be provided. In general, $N_\text{overlap}$ may be known, especially if the GWASs have been performed on a single fully overlapping sample, and an estimate for $\rho$ could be obtained from the literature. However, especially when only GWAS summary statistics are available, it can often be difficult to know the value of $N_\text{overlap}$ or $\rho$. Therefore, within its functionality, MR-SimSS also has an **alternative strategy which seeks to estimate a value for $\lambda = \frac{N_\text{overlap}\rho}{\sqrt{N_X N_Y}}$**, using only the available **summary-level data of the <u>genome-wide set</u> of genetic variants** i.e. $\{ \widehat{\gamma_j}, \widehat{\sigma_{X_j}}, \widehat{\Gamma_j}, \widehat{\sigma_{Y_j}}\}$. Additional details regarding this approach, which is based on conditional likelihood, can be found [here](https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html#estimating-the-correlation). 
+[$\star$]{style="color: darkblue;"} **Note:** The asymptotic conditional distribution equation, given in Step 1, suggests that in order to implement MR-SimSS, if the number of overlapping samples involved in the exposure and outcome GWASs, $N_\text{overlap}$, is known to differ from zero, $N_\text{overlap} \neq 0$, then this number $N_\text{overlap}$ as well as the correlation between the exposure and outcome, $\rho$, must be provided. In general, $N_\text{overlap}$ may be known, especially if the GWASs have been performed on a single fully overlapping sample, and an estimate for $\rho$ could be obtained from the literature. However, especially when only GWAS summary statistics are available, it can often be difficult to know the value of $N_\text{overlap}$ or $\rho$. Therefore, within its functionality, MR-SimSS also has an **alternative strategy which seeks to estimate a value for $\lambda = \frac{N_\text{overlap}\rho}{\sqrt{N_X N_Y}}$**, using only the available **summary-level data of the <u>genome-wide set</u> of genetic variants** i.e. $\{ \widehat{\gamma_j}, \widehat{\sigma_{X_j}}, \widehat{\Gamma_j}, \widehat{\sigma_{Y_j}}\}$. 
 
 <br>
 
 [$\star$]{style="color: darkblue;"} **Note:** Unfortunately, repeatedly simulating values for $\{\gamma_{\pi_j}, \Gamma_{\pi_j}\}$ and $\{\gamma_{{(1-\pi)p}_j}, \Gamma_{{(1-\pi)p}_j}\}$ for thousands of genetic variants can make MR-SimSS a very computationally intensive process, especially in comparison with other summary-level MR methods. By recognising that irrespective of the genetic architecture of the exposure, there will likely be many variants which will never be selected across the $N_\text{iter}$ iterations, MR-SimSS contains a **computationally efficient feature** which first establishes a **smaller subset of genetic variants** that will then be entered into the main algorithm. This subset of genetic variants is constructed by first ordering all variants according to their probabilities, $f\left( z_{X_{\pi,j}} > 5.45\right)$, from smallest to largest and then, obtaining the <u>cumulative sum
 of these probabilities</u> for each variant. All SNPs with a cumulative probability greater than 0.05 are included in the subset. This process ensures that for a single iteration of MR-SimSS, the <u>number of genetic instruments if the full set of SNPs is used and the number of instruments if merely the subset is used will be equal with probability at
-least 95\%</u>. Further details regarding can be found [here](https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html#reducing-the-set-of-variants).
+least 95\%</u>. 
 
 
 <br>

@@ -260,8 +260,7 @@ conditional distribution has been derived as:</p>
 Here, <span class="math inline">\(\rho\)</span> represents the
 correlation between the exposure and the outcome, <span class="math inline">\(\rho = \text{cor}(X,Y)\)</span>, which may differ
 from <span class="math inline">\(\beta\)</span>, the true
-exposure-outcome causal effect, due to confounding. A detailed outline
-of the derivation of this asymptotic distribution can be found <a href="https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html" class="external-link">here</a>.
+exposure-outcome causal effect, due to confounding.
 </li>
 <li>
 The <strong>estimated standard errors</strong> of the simulated
@@ -337,7 +336,7 @@ conditional distribution</strong> of <span class="math inline">\(\begin{bmatrix}
 \widehat{\Gamma_{(1-\pi)p}} \end{bmatrix} \Bigm| \begin{bmatrix}
 \widehat{\gamma_{1-\pi}} \\ \widehat{\Gamma_{1-\pi}}
 \end{bmatrix}\)</span> takes a similar format to the conditional
-distribution included above - an expression for it can be found <a href="https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html" class="external-link">here</a>.
+distribution included above.
 </li>
 <li>
 Using the <strong>asymptotic linearity of maximum likelihood
@@ -393,9 +392,7 @@ can be obtained using the following expression:</p>
 \left[ \hat\beta^{(k)} -
 \overline{\hat\beta}\right]^2}{N_\text{iter}}}\]</span> Note that <span class="math inline">\(\text{se}\left(\hat\beta^{(k)}\right)\)</span> is
 the standard error of the causal effect estimate at iteration <span class="math inline">\(k\)</span>, which is typically provided by the
-summary-level MR method of choice. More details regarding the expression
-for <span class="math inline">\(\text{se}(\overline{\hat\beta})\)</span>
-can be found <a href="https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html" class="external-link">here</a>.
+summary-level MR method of choice.
 </li>
 </ol>
 <p><br></p>
@@ -417,8 +414,7 @@ seeks to estimate a value for <span class="math inline">\(\lambda =
 only the available <strong>summary-level data of the <u>genome-wide
 set</u> of genetic variants</strong> i.e. <span class="math inline">\(\{
 \widehat{\gamma_j}, \widehat{\sigma_{X_j}}, \widehat{\Gamma_j},
-\widehat{\sigma_{Y_j}}\}\)</span>. Additional details regarding this
-approach, which is based on conditional likelihood, can be found <a href="https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html#estimating-the-correlation" class="external-link">here</a>.</p>
+\widehat{\sigma_{Y_j}}\}\)</span>.</p>
 <p><br></p>
 <p><span style="color: darkblue;"><span class="math inline">\(\star\)</span></span> <strong>Note:</strong>
 Unfortunately, repeatedly simulating values for <span class="math inline">\(\{\gamma_{\pi_j}, \Gamma_{\pi_j}\}\)</span> and
@@ -439,8 +435,7 @@ each variant. All SNPs with a cumulative probability greater than 0.05
 are included in the subset. This process ensures that for a single
 iteration of MR-SimSS, the <u>number of genetic instruments if the full
 set of SNPs is used and the number of instruments if merely the subset
-is used will be equal with probability at least 95%</u>. Further details
-regarding can be found <a href="https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html#reducing-the-set-of-variants" class="external-link">here</a>.</p>
+is used will be equal with probability at least 95%</u>.</p>
 <p><br></p>
 </div>
 <div class="section level3">
