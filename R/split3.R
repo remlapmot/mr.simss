@@ -42,8 +42,8 @@ split3 <- function(data,lambda.val=0,pi=0.5,pi2 = 0.5, mr_method="mr_ivw", thres
   if(nrow(data) < 3){return(NULL)}else{
     ## Use conditional distribution to obtain variant-outcome estimates for selected variants
     ## reduces comp time considerably compared with use of bivariate normals for all variants
-    mean.outcome <- data$beta.outcome + ((lambda*data$se.outcome)/(data$se.exposure))*(data$beta.exposure.1 - data$beta.exposure)
-    sd.outcome <- data$se.outcome*sqrt(1-(((1-pi)/(pi))*((lambda)^2)))
+    mean.outcome <- data$beta.outcome + ((lambda.val*data$se.outcome)/(data$se.exposure))*(data$beta.exposure.1 - data$beta.exposure)
+    sd.outcome <- data$se.outcome*sqrt(1-(((1-pi)/(pi))*((lambda.val)^2)))
     data$beta.outcome.1 <- stats::rnorm(n=nrow(data),mean=mean.outcome, sd=sd.outcome)
 
     beta.exposure.2 <- (data$beta.exposure - pi*data$beta.exposure.1)/(1-pi)

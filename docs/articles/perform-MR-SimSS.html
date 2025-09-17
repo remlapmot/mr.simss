@@ -74,49 +74,409 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amandaforde/mr.simss" class="external-link">mr.simss</a></span><span class="op">)</span></span></code></pre></div>
-<p>This vignette .. brief introduction ….</p>
-<p>What do I want to include in here? Demonstrate example how to use
-mr_simss and also est_lambda</p>
-<p>First create a toy data set…</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amandaforde/mr.simss" class="external-link">mr.simss</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<p>This vignette demonstrates how this R package, <code>mr.simss</code>,
+can be used to obtain MR causal effect estimates void of <em>Winner’s
+Curse bias</em> using merely two sets of GWAS summary statistics, one
+for exposure and the other for outcome. We first create a toy data set
+and subsequently, illustrate how <strong>MR Simulated Sample Splitting
+(MR-SimSS)</strong> can be implemented using the <code>mr_simss</code>
+function. Various parameters of the <code>mr_simss</code> function are
+discussed in detail, while application to real data is also shown at the
+end of this vignette.</p>
 <div class="section level3">
 <h3 id="creating-a-toy-data-set">Creating a toy data set<a class="anchor" aria-label="anchor" href="#creating-a-toy-data-set"></a>
 </h3>
-<p>Establish function to create toy data set.. specify certain
-parameters etc….??</p>
+<p>In order to demonstrate how <code>mr_simss</code> can be applied, we
+first create a toy data set consisting of exposure and outcome GWAS
+summary statistics. We must specify certain important parameters such as
+the number of variants in our data set (<code>n_snps=10^6</code>), the
+exposure-outcome correlation (<code>cor_xy=0.5</code>), the causal
+effect of the exposure on the outcome (<code>beta_xy=0.3</code>), the
+sample size (<code>n_x=n_y=200000</code>) and the fraction of
+overlapping samples between the two studies
+(<code>frac_overlap=0</code>):</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n_snps</span> <span class="op">&lt;-</span> <span class="fl">10</span><span class="op">^</span><span class="fl">6</span> </span>
+<span><span class="va">prop_effect</span> <span class="op">&lt;-</span> <span class="fl">0.012</span> <span class="co"># proportion of total SNPs that have effect on exposure</span></span>
+<span><span class="va">h2</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="co"># heritability of the exposure, i.e. proportion of variance explained in exposure by SNPs</span></span>
+<span><span class="va">n_x</span> <span class="op">&lt;-</span> <span class="fl">200000</span>; <span class="va">n_y</span> <span class="op">&lt;-</span> <span class="fl">200000</span> </span>
+<span><span class="va">frac_overlap</span> <span class="op">&lt;-</span> <span class="fl">0</span> <span class="co"># assume two GWASs have been performed with non-overlapping samples</span></span>
+<span><span class="va">cor_xy</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">beta_xy</span> <span class="op">&lt;-</span> <span class="fl">0.3</span> </span></code></pre></div>
+<p>The following code shows how a set of GWAS summary statistics,
+i.e. estimated variant-exposure associations, estimated variant-outcome
+associations and their corresponding standard errors <span class="math inline">\(\left( \widehat{\gamma_j}, \widehat{\sigma_{X_j}},
+\widehat{\Gamma_j}, \widehat{\sigma_{Y_j}} \right)\)</span> for each
+genetic variant <span class="math inline">\(j = 1, \dots, n\)</span>,
+can be simulated:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1025</span><span class="op">)</span> </span>
+<span><span class="va">n_overlap</span> <span class="op">&lt;-</span> <span class="va">frac_overlap</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">n_x</span>, <span class="va">n_y</span><span class="op">)</span> </span>
+<span><span class="va">maf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_snps</span>, <span class="fl">0.01</span>, <span class="fl">0.5</span><span class="op">)</span> <span class="co"># minor allele frequencies </span></span>
+<span><span class="va">effect_snps</span> <span class="op">&lt;-</span> <span class="va">n_snps</span><span class="op">*</span><span class="va">prop_effect</span></span>
+<span><span class="va">index</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_snps</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">ceiling</a></span><span class="op">(</span><span class="va">effect_snps</span><span class="op">)</span>, replace<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span> <span class="co"># random sampling effect variants</span></span>
+<span><span class="va">beta_gx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>,<span class="va">n_snps</span><span class="op">)</span></span>
+<span><span class="va">beta_gx</span><span class="op">[</span><span class="va">index</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">index</span><span class="op">)</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="co"># simulating true effects </span></span>
+<span><span class="va">var_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">maf</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">maf</span><span class="op">)</span><span class="op">*</span><span class="va">beta_gx</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">/</span><span class="va">h2</span></span>
+<span><span class="kw">if</span><span class="op">(</span><span class="va">var_x</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span><span class="op">{</span><span class="va">beta_gx</span> <span class="op">&lt;-</span> <span class="va">beta_gx</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">var_x</span><span class="op">)</span><span class="op">}</span> <span class="co"># scaling to represent exposure with variance 1</span></span>
+<span><span class="va">beta_gy</span> <span class="op">&lt;-</span> <span class="va">beta_gx</span> <span class="op">*</span> <span class="va">beta_xy</span></span>
+<span><span class="va">var_gx</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="va">n_x</span><span class="op">*</span><span class="fl">2</span><span class="op">*</span><span class="va">maf</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">maf</span><span class="op">)</span><span class="op">)</span> <span class="co"># exposure variance = 1</span></span>
+<span><span class="va">var_gy</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="va">n_y</span><span class="op">*</span><span class="fl">2</span><span class="op">*</span><span class="va">maf</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">maf</span><span class="op">)</span><span class="op">)</span> <span class="co"># outcome variance = 1</span></span>
+<span><span class="va">cov_gx_gy</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="op">(</span><span class="va">n_overlap</span><span class="op">*</span><span class="va">cor_xy</span><span class="op">)</span><span class="op">/</span><span class="op">(</span><span class="va">n_x</span><span class="op">*</span><span class="va">n_y</span><span class="op">)</span><span class="op">)</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">maf</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">maf</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## Covariance matrix for each SNP:</span></span>
+<span><span class="va">cov_array</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">array</a></span><span class="op">(</span>dim<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="va">n_snps</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cov_array</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="va">var_gx</span></span>
+<span><span class="va">cov_array</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="va">cov_gx_gy</span></span>
+<span><span class="va">cov_array</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="va">cov_array</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="op">]</span></span>
+<span><span class="va">cov_array</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="va">var_gy</span></span>
+<span></span>
+<span><span class="co">## Simulating variant-exposure and variant-outcome association estimates</span></span>
+<span><span class="va">summary_stats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">cov_array</span>, <span class="fl">3</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">{</span><span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/mvrnorm.html" class="external-link">mvrnorm</a></span><span class="op">(</span>n<span class="op">=</span><span class="fl">1</span>, mu<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0</span><span class="op">)</span>, Sigma<span class="op">=</span><span class="va">x</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">beta.exposure</span> <span class="op">&lt;-</span> <span class="va">summary_stats</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span> <span class="op">+</span> <span class="va">beta_gx</span></span>
+<span><span class="va">beta.outcome</span> <span class="op">&lt;-</span> <span class="va">summary_stats</span><span class="op">[</span><span class="fl">2</span>,<span class="op">]</span> <span class="op">+</span> <span class="va">beta_gy</span></span>
+<span></span>
+<span><span class="co">## GWAS summary statistics:</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    SNP <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_snps</span>,</span>
+<span>    beta.exposure <span class="op">=</span> <span class="va">beta.exposure</span>,</span>
+<span>    beta.outcome <span class="op">=</span> <span class="va">beta.outcome</span>,</span>
+<span>    se.exposure <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">var_gx</span><span class="op">)</span>,</span>
+<span>    se.outcome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">var_gy</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">#&gt;     SNP beta.exposure beta.outcome se.exposure se.outcome</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1     -<span style="color: #BB0000;">0.004</span><span style="color: #BB0000; text-decoration: underline;">68</span>      0.006<span style="text-decoration: underline;">05</span>      0.003<span style="text-decoration: underline;">54</span>    0.003<span style="text-decoration: underline;">54</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     2      0.000<span style="text-decoration: underline;">141</span>     0.002<span style="text-decoration: underline;">23</span>      0.004<span style="text-decoration: underline;">53</span>    0.004<span style="text-decoration: underline;">53</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3      0.002<span style="text-decoration: underline;">86</span>     -<span style="color: #BB0000;">0.008</span><span style="color: #BB0000; text-decoration: underline;">84</span>      0.003<span style="text-decoration: underline;">73</span>    0.003<span style="text-decoration: underline;">73</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     4     -<span style="color: #BB0000;">0.001</span><span style="color: #BB0000; text-decoration: underline;">63</span>      0.000<span style="text-decoration: underline;">722</span>     0.004<span style="text-decoration: underline;">17</span>    0.004<span style="text-decoration: underline;">17</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     5      0.000<span style="text-decoration: underline;">325</span>     0.007<span style="text-decoration: underline;">86</span>      0.007<span style="text-decoration: underline;">30</span>    0.007<span style="text-decoration: underline;">30</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     6     -<span style="color: #BB0000;">0.005</span><span style="color: #BB0000; text-decoration: underline;">10</span>      0.001<span style="text-decoration: underline;">88</span>      0.003<span style="text-decoration: underline;">24</span>    0.003<span style="text-decoration: underline;">24</span></span></span></code></pre></div>
+<p><br></p>
 </div>
 <div class="section level3">
-<h3 id="using-mr_simss">Using <code>mr_simss</code><a class="anchor" aria-label="anchor" href="#using-mr_simss"></a>
+<h3 id="implementing-mr-simss-with-mr_simss">Implementing MR-SimSS with <code>mr_simss</code><a class="anchor" aria-label="anchor" href="#implementing-mr-simss-with-mr_simss"></a>
 </h3>
-<p>After toy data set is made, we can now consider applying method …
-detailed discussion of how to do that and the various options included
-…</p>
+<p>This package’s main function, <code>mr_simss</code>, requires a data
+frame, in a form similar to the one above, with columns
+<code>SNP</code>, <code>beta.exposure</code>, <code>beta.outcome</code>,
+<code>se.exposure</code> and <code>se.outcome</code>. Note that all
+columns of the data frame must contain numerical values and each row
+must represent a unique genetic variant, identified by
+<code>SNP</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Implementing mr_simss with "mr_raps" and default parameters</span></span>
+<span><span class="va">simss.est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mr_simss.html">mr_simss</a></span><span class="op">(</span><span class="va">data</span>,mr_method<span class="op">=</span><span class="st">"mr_raps"</span>,threshold<span class="op">=</span><span class="fl">5e-8</span>,n.iter<span class="op">=</span><span class="fl">1000</span>,splits<span class="op">=</span><span class="fl">3</span>,pi<span class="op">=</span><span class="fl">0.5</span>,pi2<span class="op">=</span><span class="fl">0.5</span>,                    </span>
+<span>                  subset<span class="op">=</span><span class="cn">TRUE</span>,sub.cut<span class="op">=</span><span class="fl">0.05</span>,</span>
+<span>                  est.lambda<span class="op">=</span><span class="cn">TRUE</span>,n.exposure<span class="op">=</span><span class="fl">1</span>,n.outcome<span class="op">=</span><span class="fl">1</span>,n.overlap<span class="op">=</span><span class="fl">1</span>,cor.xy<span class="op">=</span><span class="fl">0</span>,lambda.thresh<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">simss.est</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="co">#&gt;    method    nsnp niter         b          se pval</span></span>
+<span><span class="co">#&gt; 1 mr_raps 251.007  1000 0.2935707 0.007639278    0</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">simss.est</span><span class="op">$</span><span class="va">results</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    method nsnp         b         se pval</span></span>
+<span><span class="co">#&gt; 1 mr_raps  265 0.2890714 0.01751133    0</span></span>
+<span><span class="co">#&gt; 2 mr_raps  245 0.2977485 0.01776773    0</span></span>
+<span><span class="co">#&gt; 3 mr_raps  247 0.3005120 0.01788805    0</span></span>
+<span><span class="co">#&gt; 4 mr_raps  243 0.3039359 0.01769095    0</span></span>
+<span><span class="co">#&gt; 5 mr_raps  263 0.3126508 0.01735312    0</span></span>
+<span><span class="co">#&gt; 6 mr_raps  259 0.2979125 0.01743181    0</span></span></code></pre></div>
+<p><br></p>
+<p>As shown above, <code>mr_simss</code> returns a list containing two
+elements, <code>summary</code> and <code>results</code>:</p>
+<ul>
+<li><p><code>summary</code> is a data frame with one row which outputs
+<code>b</code>, the <u><em>estimated causal effect of exposure on
+outcome</em></u> obtained using the <strong>MR-SimSS</strong> framework,
+as well as <code>se</code>, the associated standard error of this
+estimate and <code>pval</code>, corresponding <em>p</em>-value. It also
+contains the MR method used, the average number of instrument SNPs used
+in each iteration and the number of iterations used. Thus, in this case
+we see that <code>mr_raps</code> has been used and the sample splitting
+process has been repeated <code>1000</code> times. On average, ~251.007
+instrument variants are selected at each iteration and the
+exposure-outcome causal effect is estimated to be 0.2936 with a standard
+error of 0.0076.</p></li>
+<li><p><code>results</code> is a data frame which contains the output
+from each iteration. It is in a similar style as the output from using
+the function <code>mr</code> from the <code>TwoSampleMR</code> R
+package. The first six rows of this data frame have been outputted
+above.</p></li>
+</ul>
+<p>Despite default settings existing for many of the important
+parameters in <code>mr_simss</code>, it is important that the user is
+aware of these parameters:</p>
+<ol style="list-style-type: decimal">
+<li><p><code>mr_method</code>: This is a string specifying the MR method
+which the user wishes to be implemented within the MR-SimSS framework.
+Despite the user being able to choose many of the methods available in
+the <code>TwoSampleMR</code> package, we advise to use either
+<code>"mr_raps"</code> or <code>"mr_ivw"</code>, with
+<code>"mr_raps"</code> being the preferable of the two due to its
+robustness to weak instruments.</p></li>
+<li><p><code>threshold</code>: This is the <span class="math inline">\(p\)</span>-value significance threshold which is
+applied in the selection step of MR-SimSS, i.e. used to select
+instrument variants in the <span class="math inline">\(\pi\)</span>-fraction. The default setting is the
+common genome-wide significance threshold of <code>5e-8</code>. However,
+in low-power settings where very few variants are deemed significant at
+this threshold, we encourage users to consider adopting a less stringent
+threshold, such as <code>5e-4</code>, while ensuring
+<code>mr_method="mr_raps"</code>. This action will yield greater
+stability in the causal effect estimate.</p></li>
+<li><p><code>n.iter</code>: This specifies the number of iterations of
+the method, i.e. the number of times sample splits are randomly
+simulated. The default setting is <code>n.iter=1000</code>, which has
+been chosen to guarantee stability and reduce variability in the final
+MR estimate.</p></li>
+<li><p><code>splits</code>: This parameter takes values <code>2</code>
+or <code>3</code>, indicating whether MR-SimSS should take a 2-split or
+3-split approach (see <a href="https://amandaforde.github.io/mr.simss/articles/MR-SimSS-algorithm.html" class="external-link">‘MR-SimSS:
+The algorithm’</a> for further details). The default setting is
+<code>splits=3</code> as the 3-split approach is advised in all cases
+where sample overlap is potentially non-zero. When it is known for
+certain that the two GWAS samples are non-overlapping, then
+<code>splits=2</code> can be used.</p></li>
+<li><p><code>pi</code>: This is the fraction of the first split in both
+the 2 and 3 split approaches, i.e. the fraction used for instrument
+selection. The default setting is <code>pi=0.5</code>.<br></p></li>
+<li><p><code>pi2</code>: This is the fraction of the second split in the
+3 split approach. Similarly, the default setting is
+<code>pi2=0.5</code>.</p></li>
+</ol>
+<p><br></p>
+<div class="section level4">
+<h4 id="comparing-mr-simss-with-classical-two-sample-mr-methods">Comparing MR-SimSS with classical Two-Sample MR methods<a class="anchor" aria-label="anchor" href="#comparing-mr-simss-with-classical-two-sample-mr-methods"></a>
+</h4>
+<p>Below, we provide a brief illustration of the difference in using the
+classical inverse variance weighted (IVW) estimator on its own versus
+within the MR-SimSS framework:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## SimSS-IVW</span></span>
+<span><span class="va">res.simss.ivw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mr_simss.html">mr_simss</a></span><span class="op">(</span><span class="va">data</span>,mr_method<span class="op">=</span><span class="st">"mr_ivw"</span><span class="op">)</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="va">res.simss.ivw</span></span>
+<span><span class="co">#&gt;   method    nsnp niter         b          se          pval</span></span>
+<span><span class="co">#&gt; 1 mr_ivw 250.887  1000 0.2771938 0.007798459 1.003681e-276</span></span>
+<span></span>
+<span><span class="co">## Classical IVW</span></span>
+<span><span class="va">data_sig</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">beta.exposure</span><span class="op">/</span><span class="va">data</span><span class="op">$</span><span class="va">se.exposure</span><span class="op">)</span>, lower.tail<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">5e-8</span><span class="op">)</span></span>
+<span><span class="va">res.ivw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">data_sig</span><span class="op">$</span><span class="va">beta.outcome</span> <span class="op">~</span> <span class="op">-</span><span class="fl">1</span> <span class="op">+</span> <span class="va">data_sig</span><span class="op">$</span><span class="va">beta.exposure</span>, weights <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="va">data_sig</span><span class="op">$</span><span class="va">se.outcome</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">res.ivw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>method<span class="op">=</span><span class="st">"mr_ivw"</span>, nsnp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_sig</span><span class="op">)</span>, b<span class="op">=</span><span class="va">res.ivw</span><span class="op">$</span><span class="va">coef</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span>, se<span class="op">=</span><span class="va">res.ivw</span><span class="op">$</span><span class="va">coef</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1</span>,<span class="va">res.ivw</span><span class="op">$</span><span class="va">sigma</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">res.ivw</span><span class="op">$</span><span class="va">pval</span> <span class="op">&lt;-</span> <span class="fl">2</span><span class="op">*</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">res.ivw</span><span class="op">$</span><span class="va">b</span><span class="op">/</span><span class="va">res.ivw</span><span class="op">$</span><span class="va">se</span><span class="op">)</span>, lower.tail<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">res.ivw</span></span>
+<span><span class="co">#&gt;   method nsnp         b          se pval</span></span>
+<span><span class="co">#&gt; 1 mr_ivw  916 0.2727558 0.004862308    0</span></span></code></pre></div>
+<p>A similar comparison is repeated for MR-RAPS:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## SimSS-RAPS</span></span>
+<span><span class="va">res.simss.raps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mr_simss.html">mr_simss</a></span><span class="op">(</span><span class="va">data</span>,mr_method<span class="op">=</span><span class="st">"mr_raps"</span><span class="op">)</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="va">res.simss.raps</span></span>
+<span><span class="co">#&gt;    method   nsnp niter         b          se         pval</span></span>
+<span><span class="co">#&gt; 1 mr_raps 250.92  1000 0.2943309 0.008132926 8.73199e-287</span></span>
+<span></span>
+<span><span class="co">## Classical MR-RAPS</span></span>
+<span><span class="va">data_sig</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">beta.exposure</span><span class="op">/</span><span class="va">data</span><span class="op">$</span><span class="va">se.exposure</span><span class="op">)</span>, lower.tail<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">5e-8</span><span class="op">)</span></span>
+<span><span class="va">res.raps</span> <span class="op">&lt;-</span> <span class="fu">mr.raps</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mr.raps/man/mr.raps.html" class="external-link">mr.raps</a></span><span class="op">(</span><span class="va">data_sig</span><span class="op">$</span><span class="va">beta.exposure</span>,<span class="va">data_sig</span><span class="op">$</span><span class="va">beta.outcome</span>,<span class="va">data_sig</span><span class="op">$</span><span class="va">se.exposure</span>,<span class="va">data_sig</span><span class="op">$</span><span class="va">se.outcome</span><span class="op">)</span></span>
+<span><span class="va">res.raps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>method<span class="op">=</span><span class="st">"mr_raps"</span>, nsnp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data_sig</span><span class="op">)</span>, b<span class="op">=</span><span class="va">res.raps</span><span class="op">$</span><span class="va">beta.hat</span>, se<span class="op">=</span><span class="va">res.raps</span><span class="op">$</span><span class="va">beta.se</span>, pval<span class="op">=</span><span class="va">res.raps</span><span class="op">$</span><span class="va">beta.p.value</span><span class="op">)</span></span>
+<span><span class="va">res.raps</span></span>
+<span><span class="co">#&gt;    method nsnp         b          se pval</span></span>
+<span><span class="co">#&gt; 1 mr_raps  916 0.2783524 0.004982773    0</span></span></code></pre></div>
+<p>The following plot summarizes the results obtained above:</p>
+<p><img src="perform-MR-SimSS_files/figure-html/unnamed-chunk-8-1.png" width="576"></p>
+<p><br></p>
+<p>In our simulated data set, we have <code>frac_overlap = 0</code> and
+so, bias due to weak instruments and Winner’s Curse will both be in the
+direction of the null (<em>see <a href="https://amandaforde.github.io/mr.simss/articles/wc_wib.html" class="external-link">‘Winner’s
+Curse and weak instrument bias in MR’</a> for detailed
+explanation</em>). This bias is illustrated clearly in the plot above as
+both classical approaches, IVW and MR-RAPS, are seen to provide causal
+effect estimates less than the true value of 0.3: 0.2728 and 0.2784,
+respectively. Unfortunately, downward bias is still evident with
+<code>SimSS-IVW</code> as it yields a causal effect estimate of 0.2772.
+This is observed due to the nature of sample splitting, i.e. it is
+possible that additional weak instrument bias is introduced as the
+effective sample sizes used for estimation are reduced. Therefore, <u>we
+recommend incorporating a two-sample MR method that is robust to weak
+instruments, such as MR-RAPS, into the MR-SimSS framework</u>. The
+benefit of doing so is depicted in the plot as
+<strong><code>SimSS-RAPS</code> clearly performs the best out of all
+four approaches, providing a causal effect estimate of 0.2943</strong>.
+Bias is reduced to -0.0057, a 73.61% improvement on the classical
+MR-RAPS implementation. Furthermore, the true causal effect of 0.3 is
+now included in the 95% confidence interval.</p>
+<p><br></p>
+</div>
+<div class="section level4">
+<h4 id="additional-mr_simss-parameters">Additional <code>mr_simss</code> parameters<a class="anchor" aria-label="anchor" href="#additional-mr_simss-parameters"></a>
+</h4>
+<p><span style="color: darkblue;"><span class="math inline">\(\star\)</span></span> In the vignette <a href="https://amandaforde.github.io/mr.simss/articles/MR-SimSS-algorithm.html" class="external-link">‘MR-SimSS:
+The algorithm’</a>, we briefly mention a <strong>computationally
+efficient feature of our approach which involves establishing a subset
+of genetic variants</strong>. This subset is constructed to contain
+variants that are considered more likely to pass the selection threshold
+or to be chosen as instruments in the main component of the MR-SimSS
+algorithm. In theory, this subsetting process ensures that for a single
+iteration of MR-SimSS, the number of genetic instruments if the full set
+of variants were included and the number of instruments if merely this
+subset is used will be equal with at least 95% probability.</p>
+<ul>
+<li>The <strong><code>subset</code></strong> parameter in
+<code>mr_simss</code> function specifies whether the above process
+should be executed or not. Naturally, the default setting is
+<code>subset=TRUE</code>.</li>
+<li>The <code>sub.cut</code> parameter, which defaults to
+<code>sub.cut=0.05</code>, specifies the probability mentioned above,
+i.e. it ensures that the two sets of genetic instruments will be equal
+in number with probability at least <code>1-sub.cut</code>.</li>
+</ul>
+<p><br></p>
+<p><span style="color: darkblue;"><span class="math inline">\(\star\)</span></span> In <a href="https://amandaforde.github.io/mr.simss/articles/MR-SimSS-algorithm.html" class="external-link">‘MR-SimSS:
+The algorithm’</a>, it is also mentioned that in addition to
+variant-exposure and variant-outcome association estimates and
+corresponding standard errors, the main MR-SimSS algorithm requires a
+value for the <strong>correlation parameter</strong> <span class="math inline">\(\lambda = \frac{N_{\text{overlap}}\rho}{\sqrt{N_X
+N_Y}}\)</span>. Because of this, this R package also contains a
+<em>supplementary function</em>, <code>est_lambda</code>, which allows
+users to obtain an <em>unbiased</em> estimate for <span class="math inline">\(\lambda\)</span>, the correlation between the
+variant-outcome and variant-exposure effect sizes, using a
+<strong>conditional log-likelihood approach</strong>. It is recommended
+to use this function by specifying <code>est_lambda=TRUE</code> in
+<code>mr_simss</code> when the fraction of sample overlap and the
+correlation between exposure and outcome are unknown.</p>
+<p><span style="color: darkred;"><strong>Note:</strong></span> For
+<code>est_lambda</code> to obtain an estimate for <span class="math inline">\(\lambda\)</span>, it is important that the set of
+supplied GWAS summary statistics, i.e. <code>data</code> in
+<code>mr_simss</code>, contain information for a <u><strong>large set of
+genome-wide variants</strong></u>, and not just those considered
+significant or relevant with respect to the exposure of choice.</p>
+<ul>
+<li>The <strong><code>est_lambda</code></strong> parameter in
+<code>mr_simss</code> function specifies whether <span class="math inline">\(\lambda\)</span> should be estimated using the
+aforementioned conditional log-likelihood approach contained in the
+<code>est_lambda</code> function. The default setting is
+<code>est_lambda=TRUE</code>.</li>
+<li>The <code>lambda.thresh</code> parameter, which defaults to
+<code>lambda.thresh=0.5</code>, is used by <code>est_lambda</code>
+function to obtain a subset of variants which have absolute
+<em>z</em>-statistics for both exposure and outcome GWASs less than this
+value, e.g. 0.5. The estimation process then assumes that both of the
+true variant-outcome and variant-exposure effect sizes of each variant
+in this subset are approximately 0.</li>
+</ul>
+<p>If the user doesn’t wish for the <code>est_lambda</code> function to
+be used, then values for the number of samples in both exposure and
+outcome GWASs (<code>n.exposure</code>,<code>n.outcome</code>), the
+number of overlapping samples between the two studies
+(<code>n.overlap</code>) and the correlation between the exposure and
+the outcome (<code>cor.xy</code>) must be supplied to
+<code>mr_simss</code>.</p>
+<p><br></p>
+<p><span style="color:#B87333;"><strong><u>Runtime:</u></strong></span>
+Despite MR-SimSS being a simulation approach, an important aspect of our
+work has focused on making the <code>mr_simss</code> function as
+<em>computationally efficient</em> as possible while retaining accurate
+effect estimation. SimSS-RAPS above took <strong>9.36 seconds</strong>
+to run.</p>
+<p><br></p>
+</div>
 </div>
 <div class="section level3">
-<h3 id="using-est_lambda">Using <code>est_lambda</code><a class="anchor" aria-label="anchor" href="#using-est_lambda"></a>
+<h3 id="performing-mr-simss-with-real-data">Performing <code>mr.simss</code> with real data<a class="anchor" aria-label="anchor" href="#performing-mr-simss-with-real-data"></a>
 </h3>
-<p>As well as estimates of the variant-exposure and variant-outcome
-associations and corresponding standard errors, the method also requires
-<em>(a)</em> knowledge of the number of samples in both outcome and
-exposure GWASs, the number of overlapping samples between the two GWASs,
-and the correlation between the exposure and the outcome, or
-<em>(b)</em> an estimate of the correlation between the SNP-outcome and
-SNP-exposure effect sizes. Due to this, this R package also contains a
-<strong><em>supplementary function</em></strong>,
-<code>est_lambda</code>, which allows users to obtain an
-<em>unbiased</em> estimate for <em>lambda</em>, the correlation between
-the variant-outcome and variant-exposure effect sizes, using a
-conditional log-likelihood approach. It is recommended to use this
-function when the fraction of overlap and the correlation between
-exposure and outcome are unknown. Merely the GWAS <strong>summary
-statistics</strong> of a large set of <em>unpruned</em> variants or
-single nucleotide polymorphisms (SNPs) are required in order to obtain
-an estimate for <em>lambda</em>.</p>
-<p>Important to have a section on Runtime here…</p>
+<div class="section level4">
+<h4 id="same-trait-empirical-analysis-with-twosamplemr-package">Same-trait empirical analysis with <code>TwoSampleMR</code>
+package<a class="anchor" aria-label="anchor" href="#same-trait-empirical-analysis-with-twosamplemr-package"></a>
+</h4>
+<p>For illustrative purposes, we conduct a same-trait MR analysis and
+<strong>estimate the effect of high-density lipoprotein cholesterol
+(HDL) on itself</strong> using two independent HDL GWAS datasets, one
+from <a href="https://pubmed.ncbi.nlm.nih.gov/32203549/" class="external-link">UK Biobank</a>
+and the other from the <a href="https://pubmed.ncbi.nlm.nih.gov/24097068/" class="external-link">Global Lipids Genetics
+Consortium</a>. The sample sizes for the two studies are <span class="math inline">\(N_\text{UKBB} = 403,943\)</span> and <span class="math inline">\(N_\text{GLGC} = 94,595\)</span>, respectively. In
+this setting, the true causal effect is known to be 1, thus providing a
+useful benchmark for us. We demonstrate below how this MR analysis can
+be conducted by employing the <code>mr_simss</code> R package together
+with <code>TwoSampleMR</code> and other related R packages.</p>
+<p><span style="color:darkred;"><strong>Note:</strong></span> As
+previously mentioned, <code>mr.simss</code> requires a genome-wide set
+of approximately independent variants to effectively estimate the
+correlation parameter, <span class="math inline">\(\lambda\)</span>. For
+this reason, it cannot be implemented as straightforwardly as other MR
+methods contained in the <code>TwoSampleMR</code> R package, i.e. by
+simply applying it to a clumped set of genome-wide significant variants.
+To overcome this issue, we obtained a <strong>genome-wide set of
+independent variants via LD pruning</strong> using the <a href="https://www.cog-genomics.org/plink/2.0/" class="external-link">PLINK 2.0</a> command
+<code>indep-pairwise 50 5 0.5</code>. This set of variants can be
+downloaded from <a href="https://raw.githubusercontent.com/amandaforde/winnerscurse_MR/refs/heads/main/pruned_SNPs.txt" class="external-link">here</a>,
+as shown below.</p>
+<p>The following code demonstrates our workflow for obtaining required
+data files of GWAS summary statistics and constructing a suitable data
+frame that <code>mr_simss</code> can be applied to.</p>
+<p><br></p>
+<p><span style="color:darkgreen;"><u><strong>Workflow:</strong></u></span></p>
+<p>First, raw VCF files for both exposure (UKBB HDL) and outcome (GLGC
+HDL) are downloaded from <a href="https://opengwas.io/datasets/ieu-b-109" class="external-link">https://opengwas.io/datasets/ieu-b-109</a>
+and <a href="https://opengwas.io/datasets/ebi-a-GCST002223" class="external-link">https://opengwas.io/datasets/ebi-a-GCST002223</a>,
+respectively, and stored in <code>data</code> folder.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Load required packages:</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MRCIEU/TwoSampleMR" class="external-link">TwoSampleMR</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mrcieu/gwasglue" class="external-link">gwasglue</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mrcieu/gwasvcf" class="external-link">gwasvcf</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MRCIEU/ieugwasr" class="external-link">ieugwasr</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## HDL 1 - ieu-b-109 (UK Biobank n=403,943)</span></span>
+<span><span class="va">HDL1.raw</span> <span class="op">&lt;-</span> <span class="fu">gwasvcf</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gwasvcf/man/query_gwas.html" class="external-link">query_gwas</a></span><span class="op">(</span><span class="st">"data/ieu-b-109.vcf.gz"</span>,pval<span class="op">=</span><span class="fl">1</span><span class="op">)</span> </span>
+<span><span class="va">HDL1.EXP</span> <span class="op">&lt;-</span> <span class="fu">gwasglue</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gwasglue/man/gwasvcf_to_TwoSampleMR.html" class="external-link">gwasvcf_to_TwoSampleMR</a></span><span class="op">(</span><span class="va">HDL1.raw</span>, type<span class="op">=</span><span class="st">"exposure"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## HDL 2 - ebi-a-GCST002223 (Global Lipids Genetics Consortium n=94,595)</span></span>
+<span><span class="va">HDL2.raw</span> <span class="op">&lt;-</span> <span class="fu">gwasvcf</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gwasvcf/man/query_gwas.html" class="external-link">query_gwas</a></span><span class="op">(</span><span class="st">"data/ebi-a-GCST002223.vcf.gz"</span>,pval<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">HDL2.OUT</span> <span class="op">&lt;-</span> <span class="fu">gwasglue</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/gwasglue/man/gwasvcf_to_TwoSampleMR.html" class="external-link">gwasvcf_to_TwoSampleMR</a></span><span class="op">(</span><span class="va">HDL2.raw</span>, type<span class="op">=</span><span class="st">"outcome"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Download set of pruned variants</span></span>
+<span><span class="va">pruned_SNPs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.table</a></span><span class="op">(</span><span class="st">'https://raw.githubusercontent.com/amandaforde/winnerscurse_MR/refs/heads/main/pruned_SNPs.txt'</span>,header<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">HDL.EXP.pruned</span> <span class="op">&lt;-</span> <span class="va">HDL1.EXP</span><span class="op">[</span><span class="va">HDL1.EXP</span><span class="op">$</span><span class="va">SNP</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pruned_SNPs</span><span class="op">$</span><span class="va">V1</span>,<span class="op">]</span></span>
+<span><span class="va">HDL.OUT.pruned</span> <span class="op">&lt;-</span> <span class="va">HDL2.OUT</span><span class="op">[</span><span class="va">HDL2.OUT</span><span class="op">$</span><span class="va">SNP</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pruned_SNPs</span><span class="op">$</span><span class="va">V1</span>,<span class="op">]</span></span>
+<span></span>
+<span><span class="co">## Harmonise - ensure variant-exposure effect and variant-outcome effect correspond to same allele</span></span>
+<span><span class="va">MR_data</span> <span class="op">&lt;-</span> <span class="fu">TwoSampleMR</span><span class="fu">::</span><span class="fu"><a href="https://mrcieu.github.io/TwoSampleMR/reference/harmonise_data.html" class="external-link">harmonise_data</a></span><span class="op">(</span><span class="va">HDL.EXP.pruned</span>, <span class="va">HDL.OUT.pruned</span><span class="op">)</span></span>
+<span><span class="va">MR_data</span> <span class="op">&lt;-</span> <span class="va">MR_data</span><span class="op">[</span><span class="va">MR_data</span><span class="op">$</span><span class="va">mr_keep</span> <span class="op">==</span> <span class="cn">TRUE</span>,<span class="op">]</span></span>
+<span></span>
+<span><span class="co">## Construct reduced data frame suitable for mr_simss implemenation</span></span>
+<span><span class="va">simss_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>SNP<span class="op">=</span><span class="va">MR_data</span><span class="op">$</span><span class="va">SNP</span>, beta.exposure<span class="op">=</span><span class="va">MR_data</span><span class="op">$</span><span class="va">beta.exposure</span>, se.exposure<span class="op">=</span><span class="va">MR_data</span><span class="op">$</span><span class="va">se.exposure</span>,beta.outcome<span class="op">=</span><span class="va">MR_data</span><span class="op">$</span><span class="va">beta.outcome</span>,se.outcome<span class="op">=</span><span class="va">MR_data</span><span class="op">$</span><span class="va">se.outcome</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">## SimSS-RAPS (2-split - zero sample overlap)</span></span>
+<span><span class="va">SimSS3_RAPS</span> <span class="op">&lt;-</span> <span class="fu">mr.simss</span><span class="fu">::</span><span class="fu"><a href="../reference/mr_simss.html">mr_simss</a></span><span class="op">(</span>data<span class="op">=</span><span class="va">simss_data</span>, mr_method<span class="op">=</span><span class="st">"mr_raps"</span>, splits<span class="op">=</span><span class="fl">2</span><span class="op">)</span> </span>
+<span><span class="va">SimSS3_RAPS</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="co">#&gt;    method    nsnp niter         b          se pval</span></span>
+<span><span class="co">#&gt; 1 mr_raps 808.816  1000 0.9848507 0.006163889    0</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Classical two-sample MR methods</span></span>
+<span><span class="va">MR_select</span> <span class="op">&lt;-</span> <span class="va">MR_data</span><span class="op">[</span><span class="va">MR_data</span><span class="op">$</span><span class="va">pval.exposure</span> <span class="op">&lt;</span> <span class="fl">5e-8</span>,<span class="op">]</span> <span class="co"># genome-wide significance threshold</span></span>
+<span><span class="fu">TwoSampleMR</span><span class="fu">::</span><span class="fu"><a href="https://mrcieu.github.io/TwoSampleMR/reference/mr.html" class="external-link">mr</a></span><span class="op">(</span><span class="va">MR_select</span>,method_list<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mr_ivw"</span>,<span class="st">"mr_weighted_median"</span>,<span class="st">"mr_weighted_mode"</span>,<span class="st">"mr_egger_regression"</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>,<span class="fl">5</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span></span>
+<span><span class="co">#&gt; Analysing 'uVQjLP' on 'cQZoF5'</span></span>
+<span><span class="co">#&gt;                      method nsnp         b          se pval</span></span>
+<span><span class="co">#&gt; 1 Inverse variance weighted 1730 0.9545393 0.006298892    0</span></span>
+<span><span class="co">#&gt; 2           Weighted median 1730 0.9484012 0.011251559    0</span></span>
+<span><span class="co">#&gt; 3             Weighted mode 1730 0.9556311 0.015565350    0</span></span>
+<span><span class="co">#&gt; 4                  MR Egger 1730 1.0173895 0.010274205    0</span></span>
+<span></span>
+<span><span class="co">## Classical MR-RAPS</span></span>
+<span><span class="va">res_RAPS</span> <span class="op">&lt;-</span> <span class="fu">mr.raps</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/mr.raps/man/mr.raps.html" class="external-link">mr.raps</a></span><span class="op">(</span><span class="va">MR_select</span><span class="op">$</span><span class="va">beta.exposure</span>, <span class="va">MR_select</span><span class="op">$</span><span class="va">beta.outcome</span>, <span class="va">MR_select</span><span class="op">$</span><span class="va">se.exposure</span>, <span class="va">MR_select</span><span class="op">$</span><span class="va">se.outcome</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>method<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MR RAPS"</span><span class="op">)</span>,nsnp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">MR_select</span><span class="op">)</span><span class="op">)</span>,b<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">res_RAPS</span><span class="op">$</span><span class="va">beta.hat</span><span class="op">)</span>,se<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">res_RAPS</span><span class="op">$</span><span class="va">beta.se</span><span class="op">)</span>,pval<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">res_RAPS</span><span class="op">$</span><span class="va">beta.p.value</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    method nsnp         b          se pval</span></span>
+<span><span class="co">#&gt; 1 MR RAPS 1730 0.9642682 0.005409247    0</span></span></code></pre></div>
+<p><br></p>
+<p>In the outputted results, we see that out of all six methods,
+<code>SimSS-RAPS</code> provides a causal effect estimate closest to the
+true value of 1 (0.9849). Furthermore, its standard error of 0.0062 is
+of comparable magnitude to that of both the classical IVW and MR-RAPS
+approaches.</p>
 </div>
-<div class="section level3">
-<h3 id="runtime">Runtime<a class="anchor" aria-label="anchor" href="#runtime"></a>
-</h3>
 </div>
   </div>
 

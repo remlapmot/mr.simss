@@ -9,8 +9,7 @@ the Mendelian Randomization (MR) framework known as **MR Simulated Sample Splitt
 `mr_simss`. `mr_simss` has several parameters which users can adjust based on
 their desired form of method implementation. Further discussion regarding these
 parameters can be viewed in the vignette titled ['Performing
-MR-SimSS'](https://amandaforde.github.io/mr.simss/articles/perform-MR-SimSS.html). In addition, ['MR-SimSS: The algorithm'](https://amandaforde.github.io/mr.simss/articles/MR-SimSS-algorithm.html) describes the MR-SimSS algorithm as well as the intuition for the approach, while a detailed derivation of the necessary formulae used in the construction of MR-SimSS can be found in ['Deriving
-MR-SimSS'](https://amandaforde.github.io/mr.simss/articles/derive-MR-SimSS.html).
+MR-SimSS'](https://amandaforde.github.io/mr.simss/articles/perform-MR-SimSS.html). In addition, ['MR-SimSS: The algorithm'](https://amandaforde.github.io/mr.simss/articles/MR-SimSS-algorithm.html) describes the MR-SimSS algorithm as well as the intuition for the approach.
 
 <br> 
 
