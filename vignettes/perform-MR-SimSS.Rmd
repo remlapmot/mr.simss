@@ -279,7 +279,7 @@ The following code demonstrates our workflow for obtaining required data files o
 First, raw VCF files for both exposure (UKBB HDL) and outcome (GLGC HDL) are downloaded from [https://opengwas.io/datasets/ieu-b-109](https://opengwas.io/datasets/ieu-b-109) and [https://opengwas.io/datasets/ebi-a-GCST002223](https://opengwas.io/datasets/ebi-a-GCST002223), respectively, and stored in `data` folder.
 
 
-```{r, warning=FALSE, message=FALSE}
+```{r, eval=FALSE, warning=FALSE, message=FALSE}
 ## Load required packages:
 library(TwoSampleMR)
 library(gwasglue)
@@ -299,13 +299,13 @@ HDL2.OUT <- gwasglue::gwasvcf_to_TwoSampleMR(HDL2.raw, type="outcome")
 ```
 
 
-```{r, echo=FALSE}
+```{r, eval=FALSE, echo=FALSE}
 HDL1.EXP <-read.csv("C:/Users/GenDataSci025/winnerscurse_MR/data/EXP-HDL-ieu-b-109.csv")
 HDL2.OUT <- read.csv("C:/Users/GenDataSci025/winnerscurse_MR/data/OUT-HDL-ebi-a-GCST002223.csv")
 ```
 
 
-```{r, message=FALSE}
+```{r, eval=FALSE, message=FALSE}
 ## Download set of pruned variants
 pruned_SNPs <- read.table('https://raw.githubusercontent.com/amandaforde/winnerscurse_MR/refs/heads/main/pruned_SNPs.txt',header=TRUE)
 
@@ -327,7 +327,7 @@ SimSS3_RAPS$summary
 
 
 
-```{r}
+```{r, eval=FALSE}
 ## Classical two-sample MR methods
 MR_select <- MR_data[MR_data$pval.exposure < 5e-8,] # genome-wide significance threshold
 TwoSampleMR::mr(MR_select,method_list=c("mr_ivw","mr_weighted_median","mr_weighted_mode","mr_egger_regression"))[,5:9]
