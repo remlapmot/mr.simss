@@ -2,23 +2,23 @@
 #'
 #' \code{split3} is a function which is used by the main function, \code{mr_simss} in order to perform the 3 split approach of the method,  \strong{MR-SimSS}.
 #'
-#'@param data A data frame to be inputted by the user containing summary
+#' @param data A data frame to be inputted by the user containing summary
 #'  statistics from the exposure and outcome GWASs. It must have at least five
 #'  columns with column names \code{SNP}, \code{beta.exposure},
 #'  \code{beta.outcome}, \code{se.exposure} and \code{se.outcome}. Each row must
 #'  correspond to a unique SNP, identified by \code{SNP}.
-#'@param lambda.val A numerical value which is computed within the main function, \code{mr_simss}.
-#' It is an estimate of \emph{lambda}, a term used to describe the correlation between the SNP-outcome and
+#' @param lambda.val A numerical value which is computed within the main function, \code{mr_simss}.
+#'  It is an estimate of \emph{lambda}, a term used to describe the correlation between the SNP-outcome and
 #'  SNP-exposure effect sizes. The default setting is \code{lambda.val=0}.
-#'@param pi A numerical value which determines the fraction of the first split. This is the fraction that will be used
+#' @param pi A numerical value which determines the fraction of the first split. This is the fraction that will be used
 #'  for SNP selection. The default setting is \code{pi=0.5}.
-#'@param pi2 A numerical value which determines the fraction of the second split. The default setting is \code{pi2=0.5}.
-#'@param mr_method A string which specifies the MR method that MR-SimSS works in
+#' @param pi2 A numerical value which determines the fraction of the second split. The default setting is \code{pi2=0.5}.
+#' @param mr_method A string which specifies the MR method that MR-SimSS works in
 #'  combination with. It is possible to use any method outputted in the list
 #'  \code{TwoSampleMR::mr_method_list()$obj}. However, it is currently advised
 #'  that the user chooses \code{"mr_ivw"} or \code{"mr_raps"}. The default
 #'  setting is \code{mr_method="mr_ivw"}.
-#'@param threshold A numerical value which specifies the threshold used to
+#' @param threshold A numerical value which specifies the threshold used to
 #'  select instrument SNPs for MR at each iteration. The default setting is
 #'  \code{threshold=5e-8}.
 #'
