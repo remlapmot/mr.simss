@@ -163,7 +163,7 @@ res.simss.raps
 
 ## Classical MR-RAPS
 data_sig <- data %>% dplyr::filter(2*(stats::pnorm(abs(data$beta.exposure/data$se.exposure), lower.tail=FALSE)) < 5e-8)
-res.raps <- mr.raps::mr.raps(data_sig$beta.exposure,data_sig$beta.outcome,data_sig$se.exposure,data_sig$se.outcome)
+res.raps <- mr.raps::mr.raps.mle(data_sig$beta.exposure,data_sig$beta.outcome,data_sig$se.exposure,data_sig$se.outcome)
 res.raps <- data.frame(method="mr_raps", nsnp=nrow(data_sig), b=res.raps$beta.hat, se=res.raps$beta.se, pval=res.raps$beta.p.value)
 res.raps
 
