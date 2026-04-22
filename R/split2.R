@@ -65,7 +65,7 @@ split2 <- function(data,lambda.val=0,pi=0.5,mr_method="mr_ivw", threshold=5e-8){
 
     if(mr_method=="mr_raps"){
       results <- tryCatch(
-        mr.raps::mr.raps(data$beta.exposure,data$beta.outcome,data$se.exposure,data$se.outcome),
+        mr.raps::mr.raps.mle(data$beta.exposure,data$beta.outcome,data$se.exposure,data$se.outcome),
         error = function(e) NULL
       )
       if(is.null(results)) return(NULL)
