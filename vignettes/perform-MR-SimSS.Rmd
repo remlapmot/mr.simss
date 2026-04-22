@@ -341,5 +341,5 @@ data.frame(method=c("MR RAPS"),nsnp=c(nrow(MR_select)),b=c(res_RAPS$beta.hat),se
 
 <br /> 
 
-In the outputted results, we see that out of all six methods, `SimSS-RAPS` provides a causal effect estimate closest to the true value of 1 (`r round(SimSS3_RAPS$summary$b,4)`). Furthermore, its standard error of `r round(SimSS3_RAPS$summary$se,4)` is of comparable magnitude to that of both the classical IVW and MR-RAPS approaches.
+In the outputted results, we see that out of all six methods, `SimSS-RAPS` provides a causal effect estimate closest to the true value of 1. Furthermore, its standard error is of comparable magnitude to that of both the classical IVW and MR-RAPS approaches.
 
