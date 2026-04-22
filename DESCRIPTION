@@ -27,6 +27,7 @@ Imports:
     TwoSampleMR,
     abind
 Remotes: 
+    qingyuanzhao/mr.raps,
     MRCIEU/TwoSampleMR
 Suggests: 
     knitr,
