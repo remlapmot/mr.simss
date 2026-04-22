@@ -333,7 +333,7 @@ MR_select <- MR_data[MR_data$pval.exposure < 5e-8,] # genome-wide significance t
 TwoSampleMR::mr(MR_select,method_list=c("mr_ivw","mr_weighted_median","mr_weighted_mode","mr_egger_regression"))[,5:9]
 
 ## Classical MR-RAPS
-res_RAPS <- mr.raps::mr.raps(MR_select$beta.exposure, MR_select$beta.outcome, MR_select$se.exposure, MR_select$se.outcome)
+res_RAPS <- mr.raps::mr.raps.mle(MR_select$beta.exposure, MR_select$beta.outcome, MR_select$se.exposure, MR_select$se.outcome)
 data.frame(method=c("MR RAPS"),nsnp=c(nrow(MR_select)),b=c(res_RAPS$beta.hat),se=c(res_RAPS$beta.se),pval=c(res_RAPS$beta.p.value))
 
 ```
