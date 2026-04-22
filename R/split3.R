@@ -107,7 +107,11 @@ split3 <- function(data,lambda.val=0,pi=0.5,pi2 = 0.5, mr_method="mr_ivw", thres
     )
 
     if(mr_method=="mr_raps"){
-      results <- mr.raps::mr.raps(data$beta.exposure,data$beta.outcome,data$se.exposure,data$se.outcome)
+      results <- tryCatch(
+        mr.raps::mr.raps(data$beta.exposure,data$beta.outcome,data$se.exposure,data$se.outcome),
+        error = function(e) NULL
+      )
+      if(is.null(results)) return(NULL)
       results <- data.frame(method="mr_raps", nsnp=nrow(data), b=results$beta.hat, se=results$beta.se, pval=results$beta.p.value)
       return(results)
     }else{
