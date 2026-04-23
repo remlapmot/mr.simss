@@ -17,7 +17,7 @@ BugReports: https://github.com/amandaforde/mr.simss/issues
 Imports:
     dplyr,
     magrittr,
-    mr.raps,
+    mr.raps (>= 0.3),
     stats,
     pracma,
     tibble,
